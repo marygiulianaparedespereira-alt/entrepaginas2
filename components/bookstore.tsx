@@ -48,16 +48,16 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
         .then((res) => res.json())
         .then((data) => {
           const rawList = data.content || data
-          const mapped = rawList.map((item: any, index: number) => ({
+          const mapped = rawList.map((item: any) => ({
             id: item.id,
             title: item.nombre,
             author: item.autor || 'Autor clásico',
-            category: item.categoria || 'Novedades',
+            category: item.categoria ? String(item.categoria).trim() : 'Novedades',
             price: Number(item.precio) || 45000,
             stock: item.stock,
             rating: 4.8,
             image: item.imagen || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=700&q=85',
-            blurb: 'Libro disponible en el catálogo de Entre Páginas.'
+            blurb: item.descripcion || 'Libro disponible en el catálogo de Entre Páginas.'
           }))
           setInventory(mapped)
         })
@@ -76,7 +76,7 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
   return <main className="min-h-[calc(100vh-82px)] bg-[#efebe9] px-5 py-10 lg:px-8"><div className="mx-auto max-w-7xl"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><button onClick={onClose} className="mb-5 text-sm text-[#8a675a] hover:text-[#3e2723]">← Volver a la tienda</button><p className="text-xs font-bold uppercase tracking-[.2em] text-[#8a675a]">Espacio privado</p><h1 className="mt-2 font-serif text-5xl italic">Gestión interna</h1><p className="mt-3 text-[#6d4c41]">Administrá tu catálogo y seguí el pulso de la librería.</p></div><button onClick={() => setShowAdd(true)} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#3e2723] px-5 py-3 text-sm font-bold text-white hover:bg-[#553731]"><Plus size={17} /> Agregar libro</button></div><div className="mt-9 grid gap-4 sm:grid-cols-3"><div className="rounded-3xl bg-[#3e2723] p-5 text-white"><p className="text-xs uppercase tracking-widest text-[#d7c2b5]">Ventas del mes</p><p className="mt-3 font-serif text-4xl">$1.248.500</p><p className="mt-2 text-sm text-[#d7c2b5]">+18,4% vs. mes anterior</p></div><div className="rounded-3xl bg-[#d9c2b4] p-5"><p className="text-xs uppercase tracking-widest text-[#6d4c41]">Libros en catálogo</p><p className="mt-3 font-serif text-4xl">{inventory.length}</p><p className="mt-2 text-sm text-[#6d4c41]">Categorías activas</p></div><div className="rounded-3xl bg-white p-5"><p className="text-xs uppercase tracking-widest text-[#8a675a]">Stock bajo</p><p className="mt-3 font-serif text-4xl">{inventory.filter((book) => book.stock <= 3).length}</p><p className="mt-2 text-sm text-[#8a675a]">Requieren reposición</p></div></div><section className="mt-9 overflow-hidden rounded-3xl border border-[#6d4c41]/15 bg-white"><div className="flex items-center justify-between border-b border-[#6d4c41]/10 px-5 py-5"><div><h2 className="font-serif text-2xl italic">Inventario</h2><p className="mt-1 text-sm text-[#8a675a]">Actualizá las unidades disponibles.</p></div><Package className="text-[#8a675a]" size={22} /></div><div className="divide-y divide-[#6d4c41]/10">{inventory.map((book) => <div key={book.id} className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-4"><img src={book.image} alt="" className="size-14 rounded-xl object-cover" /><div><p className="font-serif text-lg italic">{book.title}</p><p className="text-sm text-[#8a675a]">{book.author} · {book.category}</p></div></div><div className="flex items-center gap-3"><span className={`min-w-24 text-center text-sm font-semibold ${book.stock <= 3 ? 'text-[#a04f3f]' : 'text-[#6d4c41]'}`}>{book.stock} unidades</span><button aria-label={`Quitar stock de ${book.title}`} onClick={() => updateStock(book.id, -1)} className="grid size-8 place-items-center rounded-full border border-[#6d4c41]/25"><Minus size={14} /></button><button aria-label={`Agregar stock a ${book.title}`} onClick={() => updateStock(book.id, 1)} className="grid size-8 place-items-center rounded-full bg-[#3e2723] text-white"><Plus size={14} /></button></div></div>)}</div></section></div>{showAdd && <div className="fixed inset-0 z-50 grid place-items-center bg-[#241614]/70 p-4"><form onSubmit={addBook} className="w-full max-w-lg rounded-3xl bg-[#f7f3ef] p-6 shadow-2xl sm:p-8"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-[#8a675a]">Catálogo</p><h2 className="mt-2 font-serif text-3xl italic">Agregar libro</h2></div><button type="button" aria-label="Cerrar formulario" onClick={() => setShowAdd(false)}><X /></button></div><div className="mt-7 flex flex-col gap-4"><label className="text-sm font-medium">Título<input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} required className="mt-1.5 w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 outline-none focus:border-[#6d4c41]" /></label><label className="text-sm font-medium">Autor<input value={newAuthor} onChange={(event) => setNewAuthor(event.target.value)} required className="mt-1.5 w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 outline-none focus:border-[#6d4c41]" /></label><label className="text-sm font-medium">Stock inicial<input type="number" min="0" value={newStock} onChange={(event) => setNewStock(event.target.value)} className="mt-1.5 w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 outline-none focus:border-[#6d4c41]" /></label></div><button className="mt-6 w-full rounded-full bg-[#3e2723] py-3.5 text-sm font-bold text-white">Guardar libro</button></form></div>}</main>
 }
 
-export function Bookstore() {
+export default function Bookstore() {
   const [books, setBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState('Todos')
@@ -99,12 +99,12 @@ export function Bookstore() {
             id: item.id,
             title: item.nombre,
             author: item.autor || 'Autor clásico',
-            category: item.categoria || 'Literatura Argentina',
+            category: item.categoria ? String(item.categoria).trim() : 'Literatura Argentina',
             price: Number(item.precio) || 45000,
             stock: item.stock,
             rating: 4.8,
             image: item.imagen || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=700&q=85',
-            blurb: 'Una obra esencial que forma parte de la colección de Entre Páginas.'
+            blurb: item.descripcion || 'Una obra esencial que forma parte de la colección de Entre Páginas.'
           }))
           setBooks(mapped)
           setLoading(false)
