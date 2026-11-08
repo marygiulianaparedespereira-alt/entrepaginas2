@@ -72,27 +72,77 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
       items.map((book) => (book.id === id ? { ...book, stock: Math.max(0, book.stock + change) } : book))
     )
 
-  const addBook = (event: FormEvent) => {
+  const deleteBook = async (id: number) => {
+    if (!confirm('¿Estás seguro de que querés eliminar este libro?')) return
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/productos/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setInventory((items) => items.filter((book) => book.id !== id))
+        alert('¡Libro eliminado con éxito!')
+      } else {
+        alert('El servidor no pudo eliminar el libro.')
+      }
+    } catch (err) {
+      console.error('Error al conectar con el backend:', err)
+      alert('No se pudo conectar con el servidor para eliminar.')
+    }
+  }
+
+  const addBook = async (event: FormEvent) => {
     event.preventDefault()
     if (!newTitle.trim() || !newAuthor.trim()) return
-    setInventory((items) => [
-      ...items,
-      {
-        id: Date.now(),
-        title: newTitle.trim(),
-        author: newAuthor.trim(),
-        category: 'Novedades',
-        price: 45000,
-        stock: Number(newStock) || 0,
-        rating: 5,
-        image: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=700&q=85',
-        blurb: 'Nueva incorporación al catálogo de Entre Páginas.',
-      },
-    ])
-    setNewTitle('')
-    setNewAuthor('')
-    setNewStock('5')
-    setShowAdd(false)
+
+    const nuevoLibro = {
+      nombre: newTitle.trim(),
+      autor: newAuthor.trim(),
+      categoria: 'Novedades',
+      precio: 45000,
+      stock: Number(newStock) || 0,
+      descripcion: 'Nueva incorporación al catálogo de Entre Páginas.',
+      imagen: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=700&q=85'
+    }
+
+    try {
+      const response = await fetch('http://localhost:8080/api/productos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(nuevoLibro),
+      })
+
+      if (response.ok) {
+        setNewTitle('')
+        setNewAuthor('')
+        setNewStock('5')
+        setShowAdd(false)
+
+        const res = await fetch('http://localhost:8080/api/productos')
+        const data = await res.json()
+        const rawList = Array.isArray(data) ? data : data.content || []
+        const mapped = rawList.map((item: any) => ({
+          id: item?.id || Math.random(),
+          title: item?.nombre || 'Sin título',
+          author: item?.autor || 'Autor clásico',
+          category: item?.categoria ? String(item.categoria).trim() : 'Novedades',
+          price: Number(item?.precio) || 45000,
+          stock: Number(item?.stock) || 0,
+          rating: 4.8,
+          image: item?.imagen || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=700&q=85',
+          blurb: item?.descripcion || 'Libro disponible en el catálogo de Entre Páginas.',
+        }))
+        setInventory(mapped)
+      } else {
+        alert('El servidor rechazó el guardado del libro.')
+      }
+    } catch (err) {
+      console.error('Error al conectar con el backend:', err)
+      alert('No se pudo conectar con el servidor para guardar el libro.')
+    }
   }
 
   return (
@@ -171,6 +221,13 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
                   >
                     <Plus size={14} />
                   </button>
+                  <button
+                    aria-label={`Eliminar ${book.title}`}
+                    onClick={() => deleteBook(book.id)}
+                    className="grid size-8 place-items-center rounded-full border border-[#a04f3f]/40 text-[#a04f3f] hover:bg-[#a04f3f] hover:text-white transition"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -228,7 +285,7 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function Bookstore() {
+export function Bookstore() {
   const [books, setBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState('Todos')
@@ -874,7 +931,9 @@ export default function Bookstore() {
               <div className="mx-auto grid size-12 place-items-center rounded-full bg-[#d9c2b4] text-[#3e2723]">
                 <UserRound />
               </div>
-              <h2 className="mt-4 font-serif text-3xl italic">{isRegistering ? 'Crear cuenta' : 'Bienvenido de vuelta'}</h2>
+              <h2 className="mt-4 font-serif text-3xl italic">
+                {isRegistering ? 'Crear una cuenta' : 'Bienvenido de vuelta'}
+              </h2>
               <p className="mt-2 text-sm text-[#8a675a]">
                 {isRegistering ? 'Registrate para empezar a comprar.' : 'Ingresá para continuar tu compra.'}
               </p>
@@ -883,20 +942,19 @@ export default function Bookstore() {
               onSubmit={async (e) => {
                 e.preventDefault()
                 const form = e.currentTarget
-                const usuario = (form.elements.namedItem('username') as HTMLInputElement).value
-                const contrasena = (form.elements.namedItem('password') as HTMLInputElement).value
-
                 if (isRegistering) {
+                  const nombreCompleto = (form.elements.namedItem('fullname') as HTMLInputElement)?.value
                   const email = (form.elements.namedItem('email') as HTMLInputElement).value
+                  const contrasena = (form.elements.namedItem('password') as HTMLInputElement).value
                   try {
                     const res = await fetch('http://localhost:8080/api/auth/registro', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ usuario, email, contrasena }),
+                      body: JSON.stringify({ usuario: email, email, contrasena, nombre: nombreCompleto }),
                     })
                     const data = await res.json()
                     if (res.ok) {
-                      alert(`¡Cuenta creada con éxito! Bienvenido, ${data.usuario}.`)
+                      alert(`¡Cuenta creada con éxito! Bienvenido, ${data.usuario || email}.`)
                       setLoginOpen(false)
                       setIsRegistering(false)
                     } else {
@@ -911,31 +969,49 @@ export default function Bookstore() {
               }}
               className="mt-7 flex flex-col gap-4"
             >
-              <div>
-                <label htmlFor="username" className="mb-1.5 block text-sm font-medium">
-                  Usuario
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  required
-                  type="text"
-                  autoComplete="username"
-                  className="w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 text-sm outline-none focus:border-[#6d4c41]"
-                />
-              </div>
+              {isRegistering ? (
+                <>
+                  <div>
+                    <label htmlFor="fullname" className="mb-1.5 block text-sm font-medium">
+                      Nombre completo
+                    </label>
+                    <input
+                      id="fullname"
+                      name="fullname"
+                      required
+                      type="text"
+                      placeholder="Tu nombre"
+                      className="w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 text-sm outline-none focus:border-[#6d4c41]"
+                    />
+                  </div>
 
-              {isRegistering && (
+                  <div>
+                    <label htmlFor="email" className="mb-1.5 block text-sm font-medium">
+                      Correo electrónico
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      required
+                      type="email"
+                      placeholder="tu@email.com"
+                      autoComplete="email"
+                      className="w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 text-sm outline-none focus:border-[#6d4c41]"
+                    />
+                  </div>
+                </>
+              ) : (
                 <div>
-                  <label htmlFor="email" className="mb-1.5 block text-sm font-medium">
-                    Correo electrónico
+                  <label htmlFor="username" className="mb-1.5 block text-sm font-medium">
+                    Usuario
                   </label>
                   <input
-                    id="email"
-                    name="email"
+                    id="username"
+                    name="username"
                     required
-                    type="email"
-                    autoComplete="email"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="Tu usuario"
                     className="w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 text-sm outline-none focus:border-[#6d4c41]"
                   />
                 </div>
@@ -951,12 +1027,16 @@ export default function Bookstore() {
                   required
                   type="password"
                   autoComplete="current-password"
+                  placeholder="••••••••"
                   className="w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 text-sm outline-none focus:border-[#6d4c41]"
                 />
               </div>
 
-              <button type="submit" className="mt-2 w-full rounded-full bg-[#3e2723] py-3.5 text-sm font-bold text-white transition hover:bg-[#553731]">
-                {isRegistering ? 'Registrarme' : 'Iniciar sesión'}
+              <button
+                type="submit"
+                className="mt-2 w-full rounded-full bg-[#3e2723] py-3.5 text-sm font-bold text-white transition hover:bg-[#553731]"
+              >
+                {isRegistering ? 'Registrarse' : 'Iniciar sesión'}
               </button>
 
               <div className="text-center">
@@ -975,3 +1055,5 @@ export default function Bookstore() {
     </div>
   )
 }
+
+export default Bookstore
