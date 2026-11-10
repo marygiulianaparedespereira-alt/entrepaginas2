@@ -1,5 +1,4 @@
 'use client'
-
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import {
   BarChart3,
@@ -74,12 +73,10 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
 
   const deleteBook = async (id: number) => {
     if (!confirm('¿Estás seguro de que querés eliminar este libro?')) return
-
     try {
       const response = await fetch(`http://localhost:8080/api/productos/${id}`, {
         method: 'DELETE',
       })
-
       if (response.ok) {
         setInventory((items) => items.filter((book) => book.id !== id))
         alert('¡Libro eliminado con éxito!')
@@ -95,7 +92,6 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
   const addBook = async (event: FormEvent) => {
     event.preventDefault()
     if (!newTitle.trim() || !newAuthor.trim()) return
-
     const nuevoLibro = {
       nombre: newTitle.trim(),
       autor: newAuthor.trim(),
@@ -105,7 +101,6 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
       descripcion: 'Nueva incorporación al catálogo de Entre Páginas.',
       imagen: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=700&q=85'
     }
-
     try {
       const response = await fetch('http://localhost:8080/api/productos', {
         method: 'POST',
@@ -114,13 +109,11 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
         },
         body: JSON.stringify(nuevoLibro),
       })
-
       if (response.ok) {
         setNewTitle('')
         setNewAuthor('')
         setNewStock('5')
         setShowAdd(false)
-
         const res = await fetch('http://localhost:8080/api/productos')
         const data = await res.json()
         const rawList = Array.isArray(data) ? data : data.content || []
@@ -164,7 +157,6 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
             <Plus size={17} /> Agregar libro
           </button>
         </div>
-
         <div className="mt-9 grid gap-4 sm:grid-cols-3">
           <div className="rounded-3xl bg-[#3e2723] p-5 text-white">
             <p className="text-xs uppercase tracking-widest text-[#d7c2b5]">Ventas del mes</p>
@@ -182,7 +174,6 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
             <p className="mt-2 text-sm text-[#8a675a]">Requieren reposición</p>
           </div>
         </div>
-
         <section className="mt-9 overflow-hidden rounded-3xl border border-[#6d4c41]/15 bg-white">
           <div className="flex items-center justify-between border-b border-[#6d4c41]/10 px-5 py-5">
             <div>
@@ -234,7 +225,6 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
           </div>
         </section>
       </div>
-
       {showAdd && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-[#241614]/70 p-4">
           <form onSubmit={addBook} className="w-full max-w-lg rounded-3xl bg-[#f7f3ef] p-6 shadow-2xl sm:p-8">
@@ -334,10 +324,10 @@ export function Bookstore() {
       ),
     [books, category, query]
   )
+
   const cartItems = books.filter((book) => cart[book.id])
   const total = cartItems.reduce((sum, book) => sum + book.price * (cart[book.id] || 0), 0)
   const cartCount = Object.values(cart).reduce((sum, count) => sum + count, 0)
-
   const add = (id: number) => setCart((current) => ({ ...current, [id]: (current[id] || 0) + 1 }))
   const remove = (id: number) =>
     setCart((current) => {
@@ -359,14 +349,11 @@ export function Bookstore() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario, contrasena }),
       })
-
       const data = await response.json()
 
       if (response.ok) {
-        alert(`¡Bienvenido de vuelta, ${data.usuario}!`)
         setUser({ usuario: data.usuario, rol: data.rol })
         setLoginOpen(false)
-
         if (data.rol === 'ADMIN') {
           setAdminOpen(true)
         }
@@ -402,7 +389,6 @@ export function Bookstore() {
               </span>
             </span>
           </a>
-
           <nav className="hidden items-center gap-5 text-sm md:flex">
             <a href="#catalogo" onClick={() => setAdminOpen(false)} className="transition-colors hover:text-[#d6b29f]">
               Catálogo
@@ -413,21 +399,15 @@ export function Bookstore() {
             <a href="#nosotros" onClick={() => setAdminOpen(false)} className="transition-colors hover:text-[#d6b29f]">
               Nuestra historia
             </a>
-            <button
-              onClick={() => {
-                if (user?.rol === 'ADMIN') {
-                  setAdminOpen(true)
-                } else {
-                  alert('Debes iniciar sesión como Administrador para acceder.')
-                  setLoginOpen(true)
-                }
-              }}
-              className="flex items-center gap-2 rounded-full border border-[#d6b29f]/35 px-3 py-2 text-[#e1c8ba] transition hover:bg-white/10"
-            >
-              <BarChart3 size={15} /> Gestión interna
-            </button>
+            {user?.rol === 'ADMIN' && (
+              <button
+                onClick={() => setAdminOpen(true)}
+                className="flex items-center gap-2 rounded-full border border-[#d6b29f]/35 px-3 py-2 text-[#e1c8ba] transition hover:bg-white/10"
+              >
+                <BarChart3 size={15} /> Gestión interna
+              </button>
+            )}
           </nav>
-
           <div className="flex items-center gap-2">
             {user ? (
               <div className="hidden items-center gap-3 sm:flex">
@@ -474,7 +454,6 @@ export function Bookstore() {
             </button>
           </div>
         </div>
-
         {menuOpen && (
           <div className="border-t border-white/10 px-5 py-4 md:hidden">
             <div className="flex flex-col gap-4 text-sm">
@@ -505,20 +484,17 @@ export function Bookstore() {
               >
                 Nuestra historia
               </a>
-              <button
-                onClick={() => {
-                  if (user?.rol === 'ADMIN') {
+              {user?.rol === 'ADMIN' && (
+                <button
+                  onClick={() => {
                     setAdminOpen(true)
-                  } else {
-                    alert('Debes iniciar sesión como Administrador.')
-                    setLoginOpen(true)
-                  }
-                  setMenuOpen(false)
-                }}
-                className="flex items-center gap-2 text-left"
-              >
-                <BarChart3 size={16} /> Gestión interna
-              </button>
+                    setMenuOpen(false)
+                  }}
+                  className="flex items-center gap-2 text-left"
+                >
+                  <BarChart3 size={16} /> Gestión interna
+                </button>
+              )}
               {user ? (
                 <button
                   onClick={() => {
@@ -943,18 +919,18 @@ export function Bookstore() {
                 e.preventDefault()
                 const form = e.currentTarget
                 if (isRegistering) {
-                  const nombreCompleto = (form.elements.namedItem('fullname') as HTMLInputElement)?.value
+                  const usuario = (form.elements.namedItem('username') as HTMLInputElement).value
                   const email = (form.elements.namedItem('email') as HTMLInputElement).value
                   const contrasena = (form.elements.namedItem('password') as HTMLInputElement).value
                   try {
                     const res = await fetch('http://localhost:8080/api/auth/registro', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ usuario: email, email, contrasena, nombre: nombreCompleto }),
+                      body: JSON.stringify({ usuario, email, contrasena }),
                     })
                     const data = await res.json()
                     if (res.ok) {
-                      alert(`¡Cuenta creada con éxito! Bienvenido, ${data.usuario || email}.`)
+                      alert(`¡Cuenta creada con éxito! Bienvenido, ${data.usuario || usuario}.`)
                       setLoginOpen(false)
                       setIsRegistering(false)
                     } else {
@@ -972,19 +948,19 @@ export function Bookstore() {
               {isRegistering ? (
                 <>
                   <div>
-                    <label htmlFor="fullname" className="mb-1.5 block text-sm font-medium">
-                      Nombre completo
+                    <label htmlFor="username" className="mb-1.5 block text-sm font-medium">
+                      Usuario
                     </label>
                     <input
-                      id="fullname"
-                      name="fullname"
+                      id="username"
+                      name="username"
                       required
                       type="text"
-                      placeholder="Tu nombre"
+                      placeholder="Tu usuario"
+                      autoComplete="username"
                       className="w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 text-sm outline-none focus:border-[#6d4c41]"
                     />
                   </div>
-
                   <div>
                     <label htmlFor="email" className="mb-1.5 block text-sm font-medium">
                       Correo electrónico
@@ -1016,7 +992,6 @@ export function Bookstore() {
                   />
                 </div>
               )}
-
               <div>
                 <label htmlFor="password" className="mb-1.5 block text-sm font-medium">
                   Contraseña
@@ -1031,14 +1006,12 @@ export function Bookstore() {
                   className="w-full rounded-xl border border-[#6d4c41]/25 bg-white px-4 py-3 text-sm outline-none focus:border-[#6d4c41]"
                 />
               </div>
-
               <button
                 type="submit"
                 className="mt-2 w-full rounded-full bg-[#3e2723] py-3.5 text-sm font-bold text-white transition hover:bg-[#553731]"
               >
                 {isRegistering ? 'Registrarse' : 'Iniciar sesión'}
               </button>
-
               <div className="text-center">
                 <button
                   type="button"
@@ -1055,5 +1028,4 @@ export function Bookstore() {
     </div>
   )
 }
-
 export default Bookstore
